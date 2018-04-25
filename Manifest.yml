@@ -75,6 +75,16 @@ metadata:
   name: td-agent-conf
 data:
   td-agent.conf: |
+
+    <source>
+      @type tail
+      path /log/**/*.log
+      pos_file /var/log/fluentd/others.pos
+      format none
+
+      tag log.*
+    </source>
+
     <source>
       @type tail
       path /log/syslog
@@ -84,7 +94,7 @@ data:
       tag log.syslog
     </source>
 
-    <match log.*>
+    <match log.**>
       @type copy
 
       <store>
