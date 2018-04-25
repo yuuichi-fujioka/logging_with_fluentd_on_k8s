@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: td-server-conf
+data:
+  td-agent.conf: |
+    <source>
+        @type forward
+    </source>
+    
+    <match log.**>
+        @type file
+        path /var/log/fluentd/out
+    </match>
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fluentd-server
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fluentd-server
+    spec:
+      containers:
+      - name: fluentd-server
+        image: fluent/fluentd:v1.1
+        ports:
+        - containerPort: 24224
+        volumeMounts:
+        - mountPath: /fluentd/etc
+          name: td-server-conf
+        - mountPath: /var/log/fluentd
+          name: logs
+        env:
+        - name: FLUENTD_CONF
+          value: td-agent.conf
+      volumes:
+      - name: td-server-conf
+        configMap:
+          name: td-server-conf
+      - name: logs
+        persistentVolumeClaim:
+          claimName: fluentd-logs
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: fluentd-server
+spec:
+  selector:
+    app: fluentd-server
+  ports:
+  - protocol: TCP
+    port: 24224
+    targetPort: 24224
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: td-agent-conf
+data:
+  td-agent.conf: |
+    <source>
+      @type tail
+      path /log/messages
+      format syslog
+      pos_file /var/log/fluentd/messages.pos
+
+      tag log.syslog
+    </source>
+
+    <match log.*>
+      @type forward
+      <server>
+        host fluentd-server
+        port 24224
+      </server>
+    </match>
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: td-agent
+spec:
+  template:
+    metadata:
+      labels:
+        app: td-agent
+      name: td-agent
+    spec:
+      containers:
+      - image: fluent/fluentd:v1.1
+        name: td-agent
+        volumeMounts:
+        - mountPath: /log
+          name: host-log
+        - mountPath: /fluentd/etc
+          name: td-agent-conf
+        - mountPath: /var/log/fluentd
+          name: logs
+        env:
+        env:
+        - name: FLUENTD_CONF
+          value: td-agent.conf
+      volumes:
+      - name: host-log
+        hostPath:
+          path: /var/log
+          type: Directory
+      - name: td-agent-conf
+        configMap:
+          name: td-agent-conf
+      - name: logs
+        emptyDir: {}
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
