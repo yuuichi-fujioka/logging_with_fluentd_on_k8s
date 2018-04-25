@@ -65,12 +65,16 @@ data:
   td-agent.conf: |
     <source>
       @type tail
-      path /log/messages
+      path /log/syslog
       format syslog
-      pos_file /var/log/fluentd/messages.pos
+      pos_file /var/log/fluentd/syslog.pos
 
       tag log.syslog
     </source>
+
+    <match log.*>
+      @type stdout
+    </match>
 
     <match log.*>
       @type forward
@@ -97,6 +101,7 @@ spec:
         volumeMounts:
         - mountPath: /log
           name: host-log
+          readOnly: yes
         - mountPath: /fluentd/etc
           name: td-agent-conf
         - mountPath: /var/log/fluentd
@@ -105,6 +110,8 @@ spec:
         env:
         - name: FLUENTD_CONF
           value: td-agent.conf
+        - name: FLUENT_UID
+          value: "0"
       volumes:
       - name: host-log
         hostPath:
