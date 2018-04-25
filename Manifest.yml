@@ -157,7 +157,9 @@ spec:
         configMap:
           name: td-agent-conf
       - name: logs
-        emptyDir: {}
+        hostPath:
+          path: /var/lib/fluentd/
+          type: Directory
       tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
