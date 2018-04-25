@@ -91,7 +91,7 @@ data:
       format syslog
       pos_file /var/log/fluentd/syslog.pos
 
-      tag log.syslog
+      tag log.*
     </source>
 
     <match log.**>
