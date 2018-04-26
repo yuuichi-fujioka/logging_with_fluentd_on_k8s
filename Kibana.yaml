@@ -1,0 +1,49 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: fluentd-server
+        image: docker.elastic.co/kibana/kibana:6.2.4
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5601
+        env:
+        - name: ELASTICSEARCH_URL
+          value: http://elasticsearch:9200
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kibana
+spec:
+  selector:
+    app: kibana
+  ports:
+  - protocol: TCP
+    port: 5601
+    targetPort: 5601
+    name: port-5601
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app: kibana
+  name: kibana
+spec:
+  rules:
+  - host: kibana.hardshell.club
+    http:
+      paths:
+      - backend:
+          serviceName: kibana
+          servicePort: 5601
+        path: /
