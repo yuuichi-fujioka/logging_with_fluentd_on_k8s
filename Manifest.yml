@@ -31,6 +31,9 @@ data:
         buffer_type file
         buffer_path /var/log/fluentd/buffer/es
         flush_interval 1
+
+        include_tag_key true
+        tag_key @log_name
       </store>
     </match>
 ---
@@ -104,6 +107,13 @@ data:
       tag "log.#{ENV['NODE_NAME']}.*"
     </source>
 
+    <filter **>
+      @type record_transformer
+      <record>
+        nodename "#{ENV['NODE_NAME']}"
+        tag ${tag}
+      </record>
+    </filter>
     <match log.**>
       @type copy
 
