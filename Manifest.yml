@@ -95,7 +95,7 @@ data:
       pos_file /var/log/fluentd/others.pos
       format none
 
-      tag "log.#{ENV['NODE_NAME']}.*"
+      tag "log.*"
     </source>
 
     <source>
@@ -104,7 +104,7 @@ data:
       format syslog
       pos_file /var/log/fluentd/syslog.pos
 
-      tag "log.#{ENV['NODE_NAME']}.*"
+      tag "log.*"
     </source>
 
     <filter **>
