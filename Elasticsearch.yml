@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-conf
+data:
+  es.conf: |
+    hello @nodename@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+spec:
+  replicas: 3
+  serviceName: elasticsearch
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      initContainers:
+      - name: config
+        image: alpine
+        command: 
+        - echo
+        - hello
+        volumeMounts:
+        - mountPath: /tmp/conf-base
+          name: config-map
+        - mountPath: /tmp/conf
+          name: conf
+      - name: sysctl
+        securityContext:
+          privileged: true
+        image: busybox
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
+        securityContext:
+          privileged: false
+          capabilities:
+            add:
+              - IPC_LOCK
+              - SYS_RESOURCE
+        ports:
+        - containerPort: 9200
+          name: port-9200
+        - containerPort: 9300
+          name: port-9300
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: data
+        - mountPath: /tmp/conf
+          name: conf
+        env:
+        - name: ES_JAVA_OPTS
+          value: -Xms512m -Xmx512m
+        - name: cluster.name
+          value: es
+        - name: bootstrap.memory_lock
+          value: "false"
+        - name: discovery.zen.ping.unicast.hosts
+          value: elasticsearch
+      volumes:
+      - name: conf
+        emptyDir: {}
+      - name: config-map
+        configMap:
+          name: elasticsearch-conf
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+  - protocol: TCP
+    port: 9200
+    targetPort: 9200
+    name: port-9200
+  - protocol: TCP
+    port: 9300
+    targetPort: 9300
+    name: port-9300
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app: elasticsearch
+  name: elasticsearch
+spec:
+  rules:
+  - host: elasticsearch.hardshell.club
+    http:
+      paths:
+      - backend:
+          serviceName: elasticsearch
+          servicePort: 9200
+        path: /
