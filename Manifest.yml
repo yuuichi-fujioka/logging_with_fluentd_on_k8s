@@ -33,7 +33,7 @@ data:
         flush_interval 1
 
         include_tag_key true
-        tag_key @log_name
+        tag_key @tag
       </store>
     </match>
 ---
@@ -95,25 +95,27 @@ data:
       pos_file /var/log/fluentd/others.pos
       format none
 
-      tag "log.*"
+      tag "log"
+      path_key path
     </source>
 
     <source>
       @type tail
       path /log/syslog
-      format syslog
+      format none
       pos_file /var/log/fluentd/syslog.pos
 
-      tag "log.*"
+      tag "log"
+      path_key path
     </source>
 
     <filter **>
       @type record_transformer
       <record>
         nodename "#{ENV['NODE_NAME']}"
-        tag ${tag}
       </record>
     </filter>
+
     <match log.**>
       @type copy
 
