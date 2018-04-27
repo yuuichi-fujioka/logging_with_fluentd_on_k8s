@@ -27,7 +27,7 @@ data:
         @type elasticsearch
         logstash_format true
         hosts elasticsearch:9200
-        logstash_prefix filename_log
+        logstash_prefix log
         buffer_type file
         buffer_path /var/log/fluentd/buffer/es
         flush_interval 1
