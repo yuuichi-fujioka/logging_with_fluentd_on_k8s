@@ -92,6 +92,7 @@ data:
     <source>
       @type tail
       path /log/**/*.log
+      exclude_path ["/log/kern.log", "/log/auth.log"]
       pos_file /var/log/fluentd/others.pos
       format none
 
@@ -101,12 +102,58 @@ data:
 
     <source>
       @type tail
+      path /log/auth.log
+      pos_file /var/log/fluentd/auth.pos
+
+      <parse>
+        @type regexp
+        # Apr 30 10:28:06 worker-1 sshd[15272]: Received disconnect from 10.1.0.151 port 56904:11: disconnected by user
+        expression /^(?<time>[^ ]*\s*[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
+        time_format %b %d %H:%M:%S
+        time_key time
+        timezone +09:00
+      </parse>
+
+      tag "log.auth"
+      path_key path
+    </source>
+
+    <source>
+      @type tail
+      path /log/kern.log
+      pos_file /var/log/fluentd/kern.pos
+
+      tag "log.kern"
+      path_key path
+
+      <parse>
+        @type regexp
+        # Apr 30 09:44:20 worker-3 kernel: [247223.187158] cni0: port 2(vethdce07609) entered forwarding state
+        expression /^(?<time>[^ ]*\s*[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*): \[(?<uptime>[0-9]+\.[0-9]+)\] *(?<message>.*)$/
+        time_key time
+        time_format %b %d %H:%M:%S
+        timezone +09:00
+      </parse>
+    </source>
+
+    <source>
+      @type tail
       path /log/syslog
-      format none
+
+
       pos_file /var/log/fluentd/syslog.pos
 
-      tag "log"
+      tag "log.syslog"
       path_key path
+
+      <parse>
+        @type regexp
+        # Apr 30 09:44:44 worker-3 dockerd[680]: time="2018-04-30T09:44:44.915607937+09:00" level=error msg="Handler for POST /v1.27/containers/a2641828c36232480d53c0b43874994069279d7f9c6c4111748a1eb62e91cf7d/stop returned error: Container a2641828c36232480d53c0b43874994069279d7f9c6c4111748a1eb62e91cf7d is already stopped"
+        expression /^(?<time>[^ ]*\s*[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
+        time_key time
+        time_format %b %d %H:%M:%S
+        timezone +09:00
+      </parse>
     </source>
 
     <filter **>
@@ -116,7 +163,7 @@ data:
       </record>
     </filter>
 
-    <match log.**>
+    <match **>
       @type copy
 
       <store>
