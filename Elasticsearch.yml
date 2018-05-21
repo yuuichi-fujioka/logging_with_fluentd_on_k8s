@@ -11,7 +11,7 @@ kind: StatefulSet
 metadata:
   name: elasticsearch
 spec:
-  replicas: 3
+  replicas: 2
   serviceName: elasticsearch
   selector:
     matchLabels:

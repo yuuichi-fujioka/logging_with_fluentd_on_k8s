@@ -6,6 +6,7 @@ How to Use
 
 .. code-block::
 
+   ansible all -m file -a "path=/var/lib/fluentd state=directory" -b
    kubectl create ns logging
    kubectl -n logging apply -f .
 
