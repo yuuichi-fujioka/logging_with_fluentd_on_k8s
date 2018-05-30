@@ -64,7 +64,7 @@ spec:
         - name: bootstrap.memory_lock
           value: "false"
         - name: discovery.zen.ping.unicast.hosts
-          value: elasticsearch
+          value: elasticsearch-master
       volumes:
       - name: conf
         emptyDir: {}
@@ -87,6 +87,23 @@ metadata:
 spec:
   selector:
     app: elasticsearch
+  ports:
+  - protocol: TCP
+    port: 9200
+    targetPort: 9200
+    name: port-9200
+  - protocol: TCP
+    port: 9300
+    targetPort: 9300
+    name: port-9300
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch-master
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: elasticsearch-0
   ports:
   - protocol: TCP
     port: 9200
